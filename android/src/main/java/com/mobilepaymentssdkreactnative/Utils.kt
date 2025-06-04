@@ -380,7 +380,7 @@ fun ReaderInfo.State.toStateString(): String {
 
 fun ReaderChangedEvent.toChangedEventMap(): WritableMap {
   return WritableNativeMap().apply {
-    putString("cange", change.toChangeString())
+    putString("change", change.toChangeString())
     putMap("reader", reader.toReaderInfoMap())
     putString("readerState", readerState.toStateString())
     putString("readerSerialNumber", readerSerialNumber)

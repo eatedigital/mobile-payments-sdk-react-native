@@ -34,7 +34,13 @@ class Mappers {
         guard let idempotencyKey = paymentParameters["idempotencyKey"] as? String else {
             return .failure(.missingIdempotencyKey)
         }
-        let paymentParams = PaymentParameters(idempotencyKey: idempotencyKey, amountMoney: amountMoney)
+
+        guard let processingModeEnum = paymentParameters["processingMode"] as? Int,
+              let processingMode = ProcessingMode(rawValue: processingModeEnum) else {
+            return .failure(.missingProcessingMode)
+        }
+
+        let paymentParams = PaymentParameters(idempotencyKey: idempotencyKey, amountMoney: amountMoney, processingMode: processingMode)
 
         // Optional parameters
         if let partialAuth = paymentParameters["acceptPartialAuthorization"] as? Bool {
@@ -176,6 +182,7 @@ extension SquareMobilePaymentsSDK.SourceType {
 enum PaymentParametersError: Error {
     case missingAmount
     case missingIdempotencyKey
+    case missingProcessingMode
 }
 
 enum PaymentPromptError: Error {

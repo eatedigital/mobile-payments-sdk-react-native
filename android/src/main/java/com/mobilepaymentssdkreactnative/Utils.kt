@@ -43,8 +43,11 @@ fun ReadableMap.readPaymentParameters(): PaymentParameters {
   // Required fields
   val amountMoney = convertToMoney(getMap("amountMoney"))
   val idempotencyKey = getString("idempotencyKey")
+  val processingMode = convertToProcessingMode(getIntOrNull("processingMode"))
+
   requireNotNull(amountMoney) { "Amount money is required" }
   requireNotNull(idempotencyKey) { "Idempotency key is required" }
+  requireNotNull(processingMode) { "Processing mode is required" }
 
   // Optional fields
   val acceptPartialAuthorization = getBooleanOrNull("acceptPartialAuthorization")
@@ -56,13 +59,12 @@ fun ReadableMap.readPaymentParameters(): PaymentParameters {
   val locationId = getString("locationId")
   val note = getString("note")
   val orderId = getString("orderId")
-  val processingMode = convertToProcessingMode(getIntOrNull("processingMode"))
   val referenceId = getString("referenceId")
   val statementDescription = getString("statementDescription")
   val teamMemberId = getString("teamMemberId")
   val tipMoney = convertToMoney(getMap("tipMoney"))
 
-  val builder = PaymentParameters.Builder(amountMoney, idempotencyKey)
+  val builder = PaymentParameters.Builder(amountMoney, idempotencyKey, processingMode)
   acceptPartialAuthorization?.let { builder.acceptPartialAuthorization(it) }
   appFeeMoney?.let { builder.appFeeMoney(it) }
   autocomplete?.let { builder.autocomplete(it) }
@@ -72,7 +74,6 @@ fun ReadableMap.readPaymentParameters(): PaymentParameters {
   locationId?.let { builder.locationId(it) }
   note?.let { builder.note(it) }
   orderId?.let { builder.orderId(it) }
-  processingMode?.let { builder.processingMode(it) }
   referenceId?.let { builder.referenceId(it) }
   statementDescription?.let { builder.statementDescription(it) }
   teamMemberId?.let { builder.teamMemberId(it) }

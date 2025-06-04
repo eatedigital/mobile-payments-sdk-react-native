@@ -1,4 +1,3 @@
-
 import UIKit
 import SquareMobilePaymentsSDK
 import MockReaderUI
@@ -15,7 +14,7 @@ class MobilePaymentsSdkReactNative: RCTEventEmitter {
     private var startPaymentRejectBlock: RCTPromiseRejectBlock?
     private var paymentHandle: PaymentHandle?
 
-    private var readersObservers: [String: ReaderObserver] = [:]
+    private var readersObservers: Set<String> = []
     private var pairingResolveBlock: RCTPromiseResolveBlock?
     private var pairingRejectBlock: RCTPromiseRejectBlock?
     private var pairingHandler: PairingHandle?
@@ -456,24 +455,23 @@ class MobilePaymentsSdkReactNative: RCTEventEmitter {
         resolve(mobilePaymentsSDK.readerManager.isPairingInProgress)
     }
 
-    // setReaderChangedCallback
     @objc(addReaderChangedCallback:withResolve:withRejecter:)
     func addReaderChangedCallback(refId: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-      let observer = MobilePaymentsReaderObserver(refId: refId, emitter: self)
-        mobilePaymentsSDK.readerManager.add(observer)
-        readersObservers[refId] = observer
+        if !readersObservers.contains(refId) {
+            readersObservers.insert(refId)
+            mobilePaymentsSDK.readerManager.add(self)
+        }
         resolve(NSNull())
     }
 
     @objc(removeReaderChangedCallback:withResolve:withRejecter:)
     func removeReaderChangedCallback(refId: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        if let observer = readersObservers[refId] {
-            mobilePaymentsSDK.readerManager.remove(observer)
-            readersObservers.removeValue(forKey: refId)
+        readersObservers.remove(refId)
+        if readersObservers.isEmpty {
+            mobilePaymentsSDK.readerManager.remove(self)
         }
         resolve(NSNull())
     }
-    // ---
 
     // pairReader
     @objc(pairReader:withRejecter:)
@@ -498,24 +496,16 @@ class MobilePaymentsSdkReactNative: RCTEventEmitter {
     // ---
 }
 
-class MobilePaymentsReaderObserver: ReaderObserver {
-    let refId: String
-    let emitter: RCTEventEmitter
-
-    init(refId: String, emitter: RCTEventEmitter) {
-        self.refId = refId
-        self.emitter = emitter
-    }
-
+extension MobilePaymentsSdkReactNative: ReaderObserver {
     func readerDidChange(_ reader: ReaderInfo, change: ReaderChange) {
         let readerMap = Mappers.mapToDictionary(reader: reader)
         let body = [
             "change": change.toName(),
             "reader": readerMap,
-            "readerState" : readerMap["state"],
-            "readerSerialNumber" : readerMap["serialNumber"] ?? NSNull()
+            "readerState": readerMap["state"],
+            "readerSerialNumber": readerMap["serialNumber"] ?? NSNull()
         ]
-        emitter.sendEvent(withName: "ReaderChanged", body: body)
+        sendEvent(withName: "ReaderChanged", body: body)
     }
 
     func readerWasAdded(_ reader: ReaderInfo) {
@@ -523,10 +513,10 @@ class MobilePaymentsReaderObserver: ReaderObserver {
         let body = [
             "change": "ADDED",
             "reader": readerMap,
-            "readerState" : readerMap["state"],
-            "readerSerialNumber" : readerMap["serialNumber"] ?? NSNull()
+            "readerState": readerMap["state"],
+            "readerSerialNumber": readerMap["serialNumber"] ?? NSNull()
         ]
-        emitter.sendEvent(withName: "ReaderChanged", body: body)
+        sendEvent(withName: "ReaderChanged", body: body)
     }
 
     func readerWasRemoved(_ reader: ReaderInfo) {
@@ -534,10 +524,10 @@ class MobilePaymentsReaderObserver: ReaderObserver {
         let body = [
             "change": "REMOVED",
             "reader": readerMap,
-            "readerState" : readerMap["state"],
-            "readerSerialNumber" : readerMap["serialNumber"] ?? NSNull()
+            "readerState": readerMap["state"],
+            "readerSerialNumber": readerMap["serialNumber"] ?? NSNull()
         ]
-        emitter.sendEvent(withName: "ReaderChanged", body: body)
+        sendEvent(withName: "ReaderChanged", body: body)
     }
 }
 
